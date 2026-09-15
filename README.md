@@ -12,8 +12,8 @@ answer, make it unreachable.
 ### [kvkk-maskeleme](https://github.com/parttimegod/kvkk-maskeleme)
 
 Detects and masks personal data in Turkish text, so a document can be
-processed — or sent to a cloud model — without its identifiers leaving
-the building.
+processed, or sent to a cloud model, without its identifiers leaving the
+building.
 
 Check-digit validation for the identifiers that have one. A locally run
 model for names and addresses, which no pattern can find. Masked output
@@ -25,7 +25,7 @@ type, 99.5% on names, 0 false positives on 30 control sentences built
 around near-miss traps.
 
 Every one of those numbers started out worse. Making the test harder is
-what found the real problems — names written without a label, addresses
+what found the real problems: names written without a label, addresses
 that were being masked only halfway, and a model configuration that
 silently returned nothing at all.
 
