@@ -1,48 +1,37 @@
-## Emirhan Bahçacı
+# Emirhan Bahçacı
 
-Econometrics student in Antalya, Türkiye, working as a court clerk at the
-Ministry of Justice. I write Python tools for problems where being
-confidently wrong is worse than returning nothing.
+**Python · Backend APIs · Document Automation · AI Tool Integration**
 
-Both projects below are built on one idea: don't warn about the wrong
-answer, make it unreachable.
+I build Python tools for document and economic-data workflows, with explicit validation, testable failure paths, and documented limits.
 
----
+I am an econometrics student and court clerk based in Antalya, Türkiye. That background gives me firsthand exposure to document-heavy processes and a reason to question plausible-looking data results.
 
-### [kvkk-maskeleme](https://github.com/parttimegod/kvkk-maskeleme)
+I am seeking remote Python backend and AI integration roles from Türkiye (UTC+3).
 
-Detects and masks personal data in Turkish text, so a document can be
-processed, or sent to a cloud model, without its identifiers leaving the
-building.
+## Selected projects
 
-Check-digit validation for the identifiers that have one. A locally run
-model for names and addresses, which no pattern can find. Masked output
-is re-scanned, and a surviving identifier raises an exception rather
-than ship a leak quietly.
+### [Turkish document masking](https://github.com/parttimegod/kvkk-maskeleme)
 
-Measured over 220 generated documents: 100% on every pattern-matched
-type, 99.5% on names, 0 false positives on 30 control sentences built
-around near-miss traps.
+A Python library and CLI for masking supported identifiers in Turkish text. The optional local-model layer handles names and addresses separately.
 
-Every one of those numbers started out worse. Making the test harder is
-what found the real problems: names written without a label, addresses
-that were being masked only halfway, and a model configuration that
-silently returned nothing at all.
+The [REST API draft](https://github.com/parttimegod/kvkk-maskeleme/pull/1) adds FastAPI input validation, a body limit checked before JSON parsing, generic errors that do not echo the submitted document, and a response that omits the restore mapping.
 
----
+**Evidence:** its current PR CI run recorded **257 passing cases**, with 1 skipped and 7 expected failures. These are synthetic tests, not accuracy measurements on customer documents. The HTTP demo uses the pattern layer; names and addresses can remain, and every result requires human review.
 
-### [evds-mcp](https://github.com/parttimegod/evds-mcp)
+[Case study](docs/document-masking.md) · [Two-minute demo](https://github.com/parttimegod/kvkk-maskeleme/blob/e8aa4faf4e5bf2ea793145631bc113053d3dae0e/API.md) · [CI run](https://github.com/parttimegod/kvkk-maskeleme/actions/runs/36709958631)
 
-An MCP server over the Central Bank of Türkiye's statistical database,
-so a model can pull Turkish macroeconomic data and analyse it without
-inventing series codes.
+### [EVDS data tools for AI clients](https://github.com/parttimegod/evds-mcp)
 
-It has no raw correlation tool, deliberately. USD/TRY against CPI
-correlates at 0.99 in levels and 0.57 log-differenced at a one-month
-lag. The first figure is spurious, the lag is not contemporaneous, and
-a tool that hands over the first number without saying so is worse than
-no tool.
+An MCP server that lets AI clients discover, retrieve, and analyse Central Bank of Türkiye time series. Relationship analysis includes stationarity checks, transformations, lag analysis, and explicit warnings.
 
----
+The optional PostgreSQL layer stores series metadata, observations, and fetch provenance. Calendar-aware lag queries distinguish a missing period from the previous stored row.
 
-Open to remote backend and data engineering work.
+**Evidence:** the [PostgreSQL CI draft](https://github.com/parttimegod/evds-mcp/pull/1) runs **15 passing integration tests** against PostgreSQL 16; its separate offline job recorded 105 passing cases.
+
+[Case study](docs/evds-data-tools.md) · [SQL examples](https://github.com/parttimegod/evds-mcp/tree/main/examples/sql) · [CI run](https://github.com/parttimegod/evds-mcp/actions/runs/36498651461)
+
+## Technologies used in these repositories
+
+Python, FastAPI, Pydantic, REST, MCP, pytest, GitHub Actions, PostgreSQL, and local-model integration.
+
+The API adapter and PostgreSQL CI additions linked above are draft PRs, separate from each project's default branch. The case studies describe portfolio work and its tested scope.
