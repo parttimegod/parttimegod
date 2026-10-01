@@ -1,23 +1,21 @@
-# Validation
+# Test runs
 
-2026-10-01: local execution used PGlite (PostgreSQL compiled to WASM)
-because native PostgreSQL could not start in the workspace. dbt 1.12.5
-and dbt-postgres 1.11.0 built all five models; all 20 dbt tests passed
-on the hand-checked fixture and on the 10,000-customer synthetic load.
-All five fixture integration checks passed. The synthetic materialization
-contained 240,000 customer-month records.
+The workflow runs on PostgreSQL 16 and 17. It imports the small fixture
+twice, builds the models, checks the expected results, then rebuilds on
+10,000 generated customers.
 
-The local wire adapter disabled psycopg prepared statements to accommodate
-PGlite's shared backend. This adapter is not part of the application.
-These checks support SQL/model correctness, not native PostgreSQL
-concurrency, production behavior or comparable performance measurements.
+| Check | What it catches |
+|---|---|
+| dbt data tests | Keys, relationships, overlapping periods, missing calendar months and revenue reconciliation |
+| Fixture integration tests | New vs returning revenue, downgrades, multiple subscriptions, cohort counts and duplicate imports |
+| Calendar rejection tests | Gaps or a reporting range that starts after the first subscription |
 
-The included workflow runs the same fixture and synthetic checks on
-native PostgreSQL 16 and 17. Consult its run status for that separate
-verification; workflow configuration alone is not a passed result.
+The original version passed on both PostgreSQL versions in
+[run 36841731070](https://github.com/parttimegod/parttimegod/actions/runs/36841731070).
+The generated movement table had 240,000 rows.
 
-Native PostgreSQL verification also passed on 2026-10-01:
-[GitHub Actions run 36841731070](https://github.com/parttimegod/parttimegod/actions/runs/36841731070).
-Both PostgreSQL 16 and 17 jobs passed all 20 dbt data tests on the fixture
-and generated source, plus all 5 fixture checks. The generated materialized
-movement table contained exactly 240,000 customer-month records.
+For the latest revision, use the repository's
+[Actions page](https://github.com/parttimegod/parttimegod/actions/workflows/warehouse.yml).
+The workflow lives at the repository root because this project currently
+sits under `projects/`. The copy inside this directory is for running
+it as a separate repository.

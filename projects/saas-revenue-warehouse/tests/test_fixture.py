@@ -54,4 +54,18 @@ def test_reruns_do_not_duplicate_source_rows():
             "(SELECT count(*) FROM raw.load_run)"
         ).fetchone()
     # CI deliberately imports the same fixture twice before building.
-    assert counts == (5, 8, 2)
+    assert counts == (5, 9, 2)
+
+
+def test_multiple_subscriptions_count_as_one_customer():
+    with psycopg.connect(os.environ["DATABASE_URL"]) as conn:
+        subscriptions = conn.execute(
+            "SELECT count(DISTINCT subscription_id) "
+            "FROM raw.subscription_period WHERE customer_id = 1"
+        ).fetchone()
+        totals = conn.execute(
+            "SELECT active_customers FROM analytics.mart_monthly_revenue "
+            "ORDER BY month"
+        ).fetchall()
+    assert subscriptions == (2,)
+    assert totals == [(3,), (3,), (5,), (4,), (3,)]

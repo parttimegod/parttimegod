@@ -1,23 +1,19 @@
 # SaaS Revenue Warehouse
 
-PostgreSQL + dbt models that explain **why recurring revenue changed**,
-not just display a total. Python loads reproducible synthetic subscription
-data; SQL models calculate customer movements, revenue retention, and
-paid-customer cohorts.
+Subscription revenue models in PostgreSQL and dbt, with a Python loader
+for sample data. The main outputs are monthly recurring revenue (MRR),
+revenue retention and paying-customer cohorts.
 
-**Portfolio project. All customers, prices, and business results are
-synthetic. No production deployment or commercial outcome is claimed.**
+A total can hide what happened underneath it. In the small fixture, MRR
+stays at $270 in February: an $80 new customer offsets $50 of cancellations
+and a $30 downgrade. The revenue bridge keeps those changes separate.
 
-## Business questions
+All data is synthetic. The default generator creates 10,000 customers
+over January 2024–December 2025; the smaller fixture can be checked by hand.
 
-- Did MRR grow through acquisition, upgrades, or returning customers?
-- How much recurring revenue did existing customers retain?
-- Which signup cohorts remain paying after one, three, or twelve months?
-- Can the revenue changes reconcile exactly to the reported total?
+## Run
 
-## Run locally
-
-Requirements: Python 3.12 and Docker Compose.
+You need Python 3.12 and Docker Compose.
 
 ```bash
 docker compose up -d --wait
@@ -27,104 +23,103 @@ pip install -r requirements.txt
 export DATABASE_URL='postgresql://warehouse:local_demo_only@127.0.0.1:5432/warehouse'
 python scripts/load_demo.py --customers 10000
 dbt build --profiles-dir .
-dbt docs generate --profiles-dir .
-dbt docs serve --profiles-dir .
 ```
 
-On Windows PowerShell activate `.venv\Scripts\Activate.ps1` and set
-`$env:DATABASE_URL` instead of `export`. Connection settings in
-`profiles.yml` can be overridden with standard `PGHOST`, `PGPORT`,
-`PGUSER`, `PGPASSWORD`, and `PGDATABASE` variables.
+On PowerShell, activate `.venv\Scripts\Activate.ps1` and assign the
+connection string to `$env:DATABASE_URL`. dbt connection settings are in
+`profiles.yml`; override them with `PGHOST`, `PGPORT`, `PGUSER`,
+`PGPASSWORD` and `PGDATABASE` for another local database.
 
-The default generator produces 10,000 customers, 24 observed months, and
-240,000 customer-month rows. Its seed is fixed at 42. Re-running the
-same load upserts natural keys and adds an audit record; it does not
-duplicate subscriptions. Use `--reset` when switching demo sizes or
-switching between fixture and generated data: additive upserts do not
-delete records omitted from a later source batch.
+The loader upserts the same customer and period IDs on a rerun. It adds
+one `raw.load_run` record per load. Use `--reset` when changing the
+sample size or switching to the fixture: upserts do not remove rows that
+are missing from a later batch.
 
-## Model design
+## Tables and models
 
-| Model | Grain | Purpose |
+| Relation | One row per | Use |
 |---|---|---|
 | `raw.customer` | Customer | Segment and country |
-| `raw.subscription_period` | Subscription price period | Effective price intervals |
-| `raw.calendar` | Observed month | Explicit as-of boundary |
-| `int_customer_month` | Customer × month | Complete spine and previous-month MRR |
-| `fct_mrr_movements` | Customer × month | New, return, expansion, contraction, churn |
-| `mart_monthly_revenue` | Month | MRR bridge, NRR and churn rates |
-| `mart_cohort_retention` | Signup cohort × month | Paying-customer retention |
+| `raw.subscription_period` | Subscription price period | Price and effective dates |
+| `raw.calendar` | Observed month | Reporting range |
+| `int_customer_month` | Customer and month | Total MRR and previous-month value |
+| `fct_mrr_movements` | Customer and month | Revenue change by cause |
+| `mart_monthly_revenue` | Month | Revenue bridge, NRR and churn |
+| `mart_cohort_retention` | Signup cohort and month | Paying-customer retention |
 
-All joins from customers to subscriptions are aggregated at customer-month
-grain before metrics are calculated. Multiple subscriptions can contribute
-to one customer's MRR without duplicating that customer in the cohort.
+`stg_periods` exposes the source columns and groups the period checks.
+The marts are rebuilt as tables; the staging and customer-month models
+are views. The larger demo produces 240,000 customer-month rows.
 
-## Metric contract
+## Definitions
 
-- **MRR** is the USD subscription run rate on the first day of the month.
-  It is not cash received, invoiced revenue, or accounting recognition.
-- Subscription periods are **`[valid_from, valid_to)`**. An end date equal
-  to the snapshot date means inactive. Prices use exact `NUMERIC` values.
-- Sources are month-aligned. A data test rejects mid-month periods; daily
-  billing and proration are outside this version's scope.
-- **New MRR** is a customer's first paid month. A previously inactive
-  customer returning later is **reactivation**, not a second acquisition.
-- **NRR** is `(opening MRR + expansion - contraction - churn) / opening MRR`.
-  New and returning customers are excluded because they contributed no
-  opening revenue. An empty opening denominator yields `NULL`.
-- **Cohort retention** divides paying customers by the cohort's starting
-  size. Returning customers count again; this is not continuous survival.
-- The calendar contains observed months only. An observed inactive month
-  is zero; a future, unobserved month is absent.
+MRR is the subscription run rate on the first day of each month, in USD.
+A price period includes its start date and excludes its end date.
+Amounts use `NUMERIC`. Periods must begin and end at month boundaries.
 
-The SQL identity is checked on every dbt build:
+Movements are classified per **customer**, after adding together that
+customer's subscriptions. A first paid month is new revenue. Returning
+after an inactive month is reactivation. A higher or lower amount for a
+previously paying customer is expansion or contraction.
+
+Net revenue retention (NRR) follows customers who paid in the previous
+month:
 
 ```text
-closing MRR = opening MRR + new + reactivation + expansion - contraction - churn
+(opening MRR + expansion - contraction - churn) / opening MRR
 ```
 
-## Correctness evidence
+New and returning customers do not contribute opening revenue. The first
+month's NRR is `NULL` because its denominator is zero.
 
-There are 20 dbt data tests: keys, nulls, relationships, period alignment,
-non-overlapping intervals, customer-month uniqueness, retention bounds,
-and exact MRR reconciliation. Five Python integration checks compare
-built marts with independent hand-calculated expectations:
+A cohort is the month of a customer's first subscription. Retention is
+the share of that cohort paying in a later observed month. A customer
+who returns counts again, so retention can rise. Future months have no
+rows; observed inactive months have zero revenue.
+
+More on the calendar and join decisions: [model notes](docs/DESIGN.md).
+
+## Check the small example
 
 ```bash
 python scripts/load_demo.py --fixture --reset
 python scripts/load_demo.py --fixture
 dbt build --profiles-dir .
-pytest tests/test_fixture.py -q
+pytest tests -q
 ```
 
-| Fixture month | MRR (USD) | Explanation |
+| Month in 2024 | MRR | Change |
 |---|---:|---|
 | January | 270 | Three new customers |
 | February | 270 | +80 new, -50 churn, -30 contraction |
-| March | 430 | +40 new, +70 reactivation, +50 expansion |
+| March | 430 | +40 new, +70 return, +50 expansion |
 | April | 350 | -80 churn |
 | May | 280 | -70 churn |
 
-The GitHub Actions workflow tests both PostgreSQL 16 and 17, first on the
-hand-checked fixture and then on 10,000 synthetic customers. See
-[validation notes](docs/VALIDATION.md) for what has actually run.
+The fixture has five customers and six subscriptions. Customer A has
+two subscriptions, C cancels and returns, and D downgrades. Integration
+tests compare the marts with the values above. The calendar tests also
+remove a month and trim the beginning of the calendar to verify that
+dbt rejects both inputs.
 
-## Explore with SQL
+dbt checks keys, relationships, valid periods, calendar coverage and the
+revenue identity:
+
+```text
+closing MRR = opening + new + reactivation + expansion - contraction - churn
+```
+
+CI runs the fixture and the larger generated dataset on PostgreSQL 16
+and 17. See [test runs](docs/VALIDATION.md).
+
+## Query the results
 
 ```sql
 SELECT month, mrr, new_mrr, expansion_mrr, churn_mrr,
        round(100 * net_revenue_retention, 2) AS nrr_percent
 FROM analytics.mart_monthly_revenue
 ORDER BY month;
-
-SELECT cohort_month, months_since_signup,
-       round(100 * retention_rate, 2) AS paid_retention_percent
-FROM analytics.mart_cohort_retention
-WHERE months_since_signup IN (1, 3, 12)
-ORDER BY cohort_month, months_since_signup;
 ```
 
-This is deliberately a small, complete analytics pipeline. It does not
-claim streaming ingestion, incremental dbt materialization, orchestration
-with Airflow, production-scale benchmarks, refunds, annual billing,
-foreign-exchange conversion, or accounting-grade revenue recognition.
+This version assumes month-aligned prices in one currency. It does not
+handle mid-month proration, annual billing, refunds or currency conversion.

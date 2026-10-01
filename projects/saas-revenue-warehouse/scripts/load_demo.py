@@ -1,4 +1,4 @@
-"""Deterministic synthetic subscriptions; no claims of real business outcomes."""
+"""Load sample subscriptions for the revenue models."""
 
 from __future__ import annotations
 
@@ -48,10 +48,12 @@ def generate(customers: int, seed: int = 42):
 
 
 def fixture():
+    """A upgrades, B cancels, C returns, D downgrades, E joins in March."""
     people = [(i, "small_business", "TR") for i in range(1, 6)]
     periods = [
-        ("A1", 1, "A", month(0), month(2), 100),
-        ("A2", 1, "A", month(2), None, 150),
+        ("A1", 1, "A", month(0), month(2), 60),
+        ("A2", 1, "A", month(2), None, 110),
+        ("A3", 1, "A-extra", month(0), None, 40),
         ("B1", 2, "B", month(1), month(3), 80),
         ("C1", 3, "C", month(0), month(1), 50),
         ("C2", 3, "C", month(2), month(4), 70),
@@ -68,19 +70,21 @@ def load(dsn: str, rows, source: str, reset: bool = False):
     with psycopg.connect(dsn) as conn, conn.cursor() as cur:
         cur.execute((ROOT / "sql/001_raw.sql").read_text())
         if reset:
-            # Only this project's raw schema, explicitly requested for demo switching.
+            # Switching fixture/demo sizes requires removing rows absent from the new load.
             cur.execute(
                 "TRUNCATE raw.load_run, raw.subscription_period, "
                 "raw.customer, raw.calendar RESTART IDENTITY CASCADE"
             )
         cur.executemany(
-            "INSERT INTO raw.customer VALUES (%s,%s,%s) "
+            "INSERT INTO raw.customer (customer_id,segment,country) VALUES (%s,%s,%s) "
             "ON CONFLICT(customer_id) DO UPDATE SET "
             "segment=excluded.segment,country=excluded.country",
             people,
         )
         cur.executemany(
-            "INSERT INTO raw.subscription_period VALUES (%s,%s,%s,%s,%s,%s) "
+            "INSERT INTO raw.subscription_period "
+            "(period_id,customer_id,subscription_id,valid_from,valid_to,monthly_price) "
+            "VALUES (%s,%s,%s,%s,%s,%s) "
             "ON CONFLICT(period_id) DO UPDATE SET "
             "customer_id=excluded.customer_id, "
             "subscription_id=excluded.subscription_id, "
@@ -117,4 +121,4 @@ if __name__ == "__main__":
         "hand_checked_fixture" if args.fixture else "synthetic_seed_42",
         args.reset,
     )
-    print("Demo source loaded; reruns upsert natural keys and record each load.")
+    print("Sample data loaded.")
