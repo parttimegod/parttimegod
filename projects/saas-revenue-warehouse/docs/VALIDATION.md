@@ -15,3 +15,9 @@ concurrency, production behavior or comparable performance measurements.
 The included workflow runs the same fixture and synthetic checks on
 native PostgreSQL 16 and 17. Consult its run status for that separate
 verification; workflow configuration alone is not a passed result.
+
+Native PostgreSQL verification also passed on 2026-10-01:
+[GitHub Actions run 36841731070](https://github.com/parttimegod/parttimegod/actions/runs/36841731070).
+Both PostgreSQL 16 and 17 jobs passed all 20 dbt data tests on the fixture
+and generated source, plus all 5 fixture checks. The generated materialized
+movement table contained exactly 240,000 customer-month records.
