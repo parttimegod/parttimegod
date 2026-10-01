@@ -20,7 +20,7 @@ jobs:
           POSTGRES_DB: warehouse
         ports: ['5432:5432']
         options: >-
-          --health-cmd 'pg_isready -U warehouse -d warehouse'
+          --health-cmd "pg_isready -U warehouse -d warehouse"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://warehouse:local_demo_only@localhost:5432/warehouse
