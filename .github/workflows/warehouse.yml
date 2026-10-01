@@ -36,6 +36,6 @@ jobs:
       - run: python scripts/load_demo.py --fixture --reset
       - run: python scripts/load_demo.py --fixture
       - run: dbt build --profiles-dir .
-      - run: pytest tests/test_fixture.py -q
+      - run: pytest tests -q
       - run: python scripts/load_demo.py --customers 10000 --reset
       - run: dbt build --profiles-dir .

@@ -1,60 +1,36 @@
 ## Emirhan Bahçacı
 
-Econometrics student in Antalya, Türkiye, working as a court clerk at the
-Ministry of Justice. I write Python and SQL tools for problems where being
-confidently wrong is worse than returning nothing.
-
-The projects below focus on explicit assumptions and verifiable outputs.
-
----
-
-### [kvkk-maskeleme](https://github.com/parttimegod/kvkk-maskeleme)
-
-Detects and masks personal data in Turkish text, so a document can be
-processed, or sent to a cloud model, without its identifiers leaving the
-building.
-
-Check-digit validation for the identifiers that have one. A locally run
-model for names and addresses, which no pattern can find. Masked output
-is re-scanned, and a surviving identifier raises an exception rather
-than ship a leak quietly.
-
-Measured over 220 generated documents: 100% on every pattern-matched
-type, 99.5% on names, 0 false positives on 30 control sentences built
-around near-miss traps.
-
-Every one of those numbers started out worse. Making the test harder is
-what found the real problems: names written without a label, addresses
-that were being masked only halfway, and a model configuration that
-silently returned nothing at all.
-
----
+Based in Antalya, Türkiye, with a background in econometrics. I work as a
+court clerk and build Python and SQL tools for data analysis and document
+processing.
 
 ### [evds-mcp](https://github.com/parttimegod/evds-mcp)
 
-An MCP server over the Central Bank of Türkiye's statistical database,
-so a model can pull Turkish macroeconomic data and analyse it without
-inventing series codes.
+An MCP server for the Central Bank of Türkiye's statistical database.
+It finds series codes, retrieves observations and checks stationarity
+before comparing time series.
 
-It has no raw correlation tool, deliberately. USD/TRY against CPI
-correlates at 0.99 in levels and 0.57 log-differenced at a one-month
-lag. The first figure is spurious, the lag is not contemporaneous, and
-a tool that hands over the first number without saying so is worse than
-no tool.
-
----
+The optional PostgreSQL store keeps observation values and fetch records
+together. Its tests cover repeated imports, missing periods and rollback
+when part of a batch fails.
 
 ### [saas-revenue-warehouse](projects/saas-revenue-warehouse)
 
-A PostgreSQL/dbt subscription analytics pipeline that explains monthly
-recurring revenue through acquisition, reactivation, expansion,
-contraction and churn, with cohort retention and explicit metric definitions.
+Subscription revenue analysis in PostgreSQL and dbt. It separates new
+customers, returns, upgrades, downgrades and cancellations, then builds
+monthly revenue and cohort reports.
 
-Five SQL models, twenty data-quality checks and five hand-calculated
-integration checks. The demo uses 10,000 synthetic customers across
-240,000 customer-month records; these are portfolio test data, not
-production customers or business results.
+The sample data includes a customer with two subscriptions and another
+who cancels and returns. Those cases matter: counting subscriptions as
+customers inflates retention, and treating a return as acquisition
+inflates new revenue. The larger demo uses generated data.
 
----
+### [kvkk-maskeleme](https://github.com/parttimegod/kvkk-maskeleme)
 
-Open to remote backend, data and analytics engineering work.
+Masks identifiers in Turkish documents using check-digit validation and
+an optional local model for names and addresses. Replacement maps stay
+local, and the output is checked again for remaining identifiers.
+
+The README includes the evaluation dataset and its limitations.
+
+Open to remote data, analytics engineering and Python backend roles.
