@@ -1,11 +1,10 @@
 ## Emirhan Bahçacı
 
 Econometrics student in Antalya, Türkiye, working as a court clerk at the
-Ministry of Justice. I write Python tools for problems where being
+Ministry of Justice. I write Python and SQL tools for problems where being
 confidently wrong is worse than returning nothing.
 
-Both projects below are built on one idea: don't warn about the wrong
-answer, make it unreachable.
+The projects below focus on explicit assumptions and verifiable outputs.
 
 ---
 
@@ -45,4 +44,17 @@ no tool.
 
 ---
 
-Open to remote backend and data engineering work.
+### [saas-revenue-warehouse](projects/saas-revenue-warehouse)
+
+A PostgreSQL/dbt subscription analytics pipeline that explains monthly
+recurring revenue through acquisition, reactivation, expansion,
+contraction and churn, with cohort retention and explicit metric definitions.
+
+Five SQL models, twenty data-quality checks and five hand-calculated
+integration checks. The demo uses 10,000 synthetic customers across
+240,000 customer-month records; these are portfolio test data, not
+production customers or business results.
+
+---
+
+Open to remote backend, data and analytics engineering work.

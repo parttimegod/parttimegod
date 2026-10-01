@@ -1,0 +1,23 @@
+version: 2
+models:
+  - name: int_customer_month
+    description: One customer per observed month; missing activity is zero.
+    columns:
+      - name: customer_id
+        data_tests: [not_null]
+      - name: month
+        data_tests: [not_null]
+  - name: mart_monthly_revenue
+    description: USD MRR at month start; excludes new and returning accounts from NRR.
+    columns:
+      - name: month
+        data_tests: [unique, not_null]
+      - name: mrr
+        data_tests: [not_null]
+  - name: mart_cohort_retention
+    description: Paid-customer retention, including returning customers.
+    columns:
+      - name: cohort_month
+        data_tests: [not_null]
+      - name: retention_rate
+        data_tests: [not_null]
