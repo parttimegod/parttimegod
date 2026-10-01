@@ -1,0 +1,41 @@
+name: warehouse
+on: [push, pull_request]
+permissions:
+  contents: read
+defaults:
+  run:
+    working-directory: projects/saas-revenue-warehouse
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgres: ['16', '17']
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: warehouse
+          POSTGRES_PASSWORD: local_demo_only
+          POSTGRES_DB: warehouse
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd 'pg_isready -U warehouse -d warehouse'
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://warehouse:local_demo_only@localhost:5432/warehouse
+      PGUSER: warehouse
+      PGPASSWORD: local_demo_only
+      PGDATABASE: warehouse
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python scripts/load_demo.py --fixture --reset
+      - run: python scripts/load_demo.py --fixture
+      - run: dbt build --profiles-dir .
+      - run: pytest tests/test_fixture.py -q
+      - run: python scripts/load_demo.py --customers 10000 --reset
+      - run: dbt build --profiles-dir .

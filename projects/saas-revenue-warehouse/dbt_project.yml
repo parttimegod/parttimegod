@@ -1,0 +1,11 @@
+name: saas_revenue_warehouse
+version: '1.0.0'
+config-version: 2
+profile: saas_revenue_warehouse
+model-paths: [models]
+test-paths: [tests/sql]
+models:
+  saas_revenue_warehouse:
+    +materialized: view
+    marts:
+      +materialized: table
